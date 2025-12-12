@@ -5,39 +5,44 @@ metadata:
   annotations:
     pipelinesascode.tekton.dev/cancel-in-progress: "true" # Cancel in-progress pipelines
     pipelinesascode.tekton.dev/pipeline: "https://raw.githubusercontent.com/openshift-pipelines/operator/refs/heads/main/.tekton/docker-build-ta.yaml"
-    build.appstudio.openshift.io/repo: https://github.com/openshift-pipelines-konflux/tekton-caches.git?rev={{revision}}
+    build.appstudio.openshift.io/repo: https://github.com/openshift-pipelines/p12n-tekton-caches.git?rev={{revision}}
     build.appstudio.redhat.com/commit_sha: '{{revision}}'
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
     pipelinesascode.tekton.dev/max-keep-runs: "3"
     pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch
-      == "main" &&
+      == "next" &&
       ("upstream/***".pathChanged() || ".konflux/patches/***".pathChanged() || ".konflux/rpms/***".pathChanged() ||
       ".konflux/dockerfiles/cache.Dockerfile".pathChanged() ||
-      ".tekton/tekton-caches-main-cache-push.yaml".pathChanged())
+      ".tekton/p12n-tekton-caches-next-cache-push.yaml".pathChanged())
   creationTimestamp: null
   labels:
-    appstudio.openshift.io/application: openshift-pipelines-core-main
-    appstudio.openshift.io/component: tekton-caches-main-cache
+    appstudio.openshift.io/application: openshift-pipelines-core-next
+    appstudio.openshift.io/component: p12n-tekton-caches-next-cache
     pipelines.appstudio.openshift.io/type: build
-  name: tekton-caches-main-cache-on-push
+  name: p12n-tekton-caches-next-cache-on-push
   namespace: tekton-ecosystem-tenant
 spec:
   params:
   - name: git-url
     value: '{{source_url}}'
+  - name: upstream-git-url
+    value: 'https://github.com/openshift-pipelines/tekton-caches'
   - name: revision
     value: '{{revision}}'
   - name: output-image
-    value: quay.io/redhat-user-workloads/tekton-ecosystem-tenant/cache-rhel9:{{revision}}
+    value: quay.io/redhat-user-workloads/tekton-ecosystem-tenant/pipelines-cache-rhel9:{{revision}}
   - name: dockerfile
     value: .konflux/dockerfiles/cache.Dockerfile
+  - name: additional-tags
+    value:
+      - "next"
   - name: prefetch-input
     value: |
       {"type": "rpm", "path": ".konflux/rpms"}
   pipelineRef:
     name: docker-build-ta
   taskRunTemplate:
-    serviceAccountName: build-pipeline-tekton-caches-main-cache
+    serviceAccountName: build-pipeline-p12n-tekton-caches-next-cache
   workspaces:
   - name: git-auth
     secret:
