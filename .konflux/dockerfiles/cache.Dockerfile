@@ -4,7 +4,7 @@ ARG RUNTIME=registry.access.redhat.com/ubi9/ubi-minimal@sha256:34880b64c07f28f64
 FROM $GO_BUILDER AS builder
 
 WORKDIR /go/src/github.com/openshift-pipelines/tekton-caches
-COPY . .
+COPY upstream .
 
 ENV GOEXPERIMENT=strictfipsruntime
 RUN git config --global --add safe.directory . && \
