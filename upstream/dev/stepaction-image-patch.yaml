@@ -1,6 +1,0 @@
-apiVersion: tekton.dev/v1beta1
-kind: StepAction
-metadata:
-  name: cache-fetch
-spec:
-  image: ko://github.com/openshift-pipelines/tekton-caches/cmd/cache
