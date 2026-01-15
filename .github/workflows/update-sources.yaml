@@ -1,12 +1,9 @@
 # Generated for Konflux Application openshift-pipelines-core by openshift-pipelines/hack. DO NOT EDIT
-name: update-sources-p12n-tekton-caches
+name: update-sources
 on:
   workflow_dispatch: {}
-  schedule:
-  - cron: "0 23 * * *" # At 23:00 everyday
 
 jobs:
-
   update-sources:
     runs-on: ubuntu-latest
     permissions:
