@@ -14,12 +14,12 @@ metadata:
       == "release-v1.22.x" &&
       ("upstream/***".pathChanged() || ".konflux/patches/***".pathChanged() || ".konflux/rpms/***".pathChanged() ||
       ".konflux/dockerfiles/cache.Dockerfile".pathChanged() ||
-      ".tekton/p12n-tekton-caches-1-22-cache-pull-request.yaml".pathChanged())
+      ".tekton/tekton-caches-1-22-cache-pull-request.yaml".pathChanged())
   labels:
     appstudio.openshift.io/application: openshift-pipelines-core-1-22
-    appstudio.openshift.io/component: p12n-tekton-caches-1-22-cache
+    appstudio.openshift.io/component: tekton-caches-1-22-cache
     pipelines.appstudio.openshift.io/type: build
-  name: p12n-tekton-caches-1-22-cache-on-pull-request
+  name: tekton-caches-1-22-cache-on-pull-request
   namespace: tekton-ecosystem-tenant
 spec:
   params:
@@ -47,7 +47,7 @@ spec:
   pipelineRef:
     name: docker-build-ta
   taskRunTemplate:
-    serviceAccountName: build-pipeline-p12n-tekton-caches-1-22-cache
+    serviceAccountName: build-pipeline-tekton-caches-1-22-cache
   workspaces:
   - name: git-auth
     secret:
