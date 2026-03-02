@@ -1,6 +1,5 @@
-ARG GO_BUILDER=registry.redhat.io/ubi9/go-toolset:1.24
-ARG RUNTIME=registry.access.redhat.com/ubi9/ubi-minimal@sha256:7c5495d5fad59aaee12abc3cbbd2b283818ee1e814b00dbc7f25bf2d14fa4f0c
-
+ARG GO_BUILDER=registry.redhat.io/ubi9/go-toolset:9.7
+ARG RUNTIME=registry.redhat.io/ubi9/ubi-minimal@sha256:c7d44146f826037f6873d99da479299b889473492d3c1ab8af86f08af04ec8a0
 FROM $GO_BUILDER AS builder
 
 WORKDIR /go/src/github.com/openshift-pipelines/tekton-caches
@@ -11,7 +10,7 @@ RUN git config --global --add safe.directory . && \
     go build -tags $GOEXPERIMENT  -v -o /tmp/cache  ./cmd/cache
 
 FROM $RUNTIME
-ARG VERSION=tekton-caches-main
+ARG VERSION=tekton-caches-0.3
 
 COPY --from=builder /tmp/cache /ko-app/cache
 
@@ -25,7 +24,8 @@ LABEL \
       description="Red Hat OpenShift Pipelines Tekton Caches" \
       io.k8s.display-name="Red Hat OpenShift Pipelines Tekton Caches" \
       io.k8s.description="Red Hat OpenShift Pipelines Tekton Caches" \
-      io.openshift.tags="pipelines,tekton,openshift,tekton-caches"
+      io.openshift.tags="pipelines,tekton,openshift,tekton-caches" \
+      cpe="cpe:/a:redhat:openshift_pipelines:1.21::el9"
 
 RUN groupadd -r -g 65532 nonroot && useradd --no-log-init -rm -u 65532 -g nonroot nonroot
 USER 65532
