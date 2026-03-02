@@ -10,16 +10,16 @@ metadata:
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
     pipelinesascode.tekton.dev/max-keep-runs: "3"
     pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch
-      == "next" &&
+      == "release-v1.21.x" &&
       ("upstream/***".pathChanged() || ".konflux/patches/***".pathChanged() || ".konflux/rpms/***".pathChanged() ||
       ".konflux/dockerfiles/cache.Dockerfile".pathChanged() ||
-      ".tekton/p12n-tekton-caches-next-cache-push.yaml".pathChanged())
+      ".tekton/tekton-caches-1-21-cache-push.yaml".pathChanged())
   creationTimestamp: null
   labels:
-    appstudio.openshift.io/application: openshift-pipelines-core-next
-    appstudio.openshift.io/component: p12n-tekton-caches-next-cache
+    appstudio.openshift.io/application: openshift-pipelines-core-1-21
+    appstudio.openshift.io/component: tekton-caches-1-21-cache
     pipelines.appstudio.openshift.io/type: build
-  name: p12n-tekton-caches-next-cache-on-push
+  name: tekton-caches-1-21-cache-on-push
   namespace: tekton-ecosystem-tenant
 spec:
   params:
@@ -35,14 +35,14 @@ spec:
     value: .konflux/dockerfiles/cache.Dockerfile
   - name: additional-tags
     value:
-      - "next"
+      - "v1.21.1"
   - name: prefetch-input
     value: |
       {"type": "rpm", "path": ".konflux/rpms"}
   pipelineRef:
     name: docker-build-ta
   taskRunTemplate:
-    serviceAccountName: build-pipeline-p12n-tekton-caches-next-cache
+    serviceAccountName: build-pipeline-tekton-caches-1-21-cache
   workspaces:
   - name: git-auth
     secret:
