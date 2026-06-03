@@ -17,16 +17,16 @@ COPY --from=builder /tmp/cache /ko-app/cache
 
 
 LABEL \
-    com.redhat.component="openshift-pipelines-cache-rhel9-container" \
+    com.redhat.component="openshift-pipelines-cache-rhel10-container" \
     cpe="cpe:/a:redhat:openshift_pipelines:nightly::el9" \
     description="Red Hat OpenShift Pipelines tekton-caches cache" \
     io.k8s.description="Red Hat OpenShift Pipelines tekton-caches cache" \
     io.k8s.display-name="Red Hat OpenShift Pipelines tekton-caches cache" \
     io.openshift.tags="tekton,openshift,tekton-caches,cache" \
     maintainer="pipelines-extcomm@redhat.com" \
-    name="openshift-pipelines/pipelines-cache-rhel9" \
+    name="openshift-pipelines/pipelines-cache-rhel10" \
     summary="Red Hat OpenShift Pipelines tekton-caches cache" \
-    version="latest"
+    version="nightly"
 
 RUN groupadd -r -g 65532 nonroot && useradd --no-log-init -rm -u 65532 -g nonroot nonroot
 USER 65532
