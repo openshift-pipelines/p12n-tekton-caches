@@ -26,7 +26,7 @@ LABEL \
     maintainer="pipelines-extcomm@redhat.com" \
     name="openshift-pipelines/pipelines-cache-rhel9" \
     summary="Red Hat OpenShift Pipelines tekton-caches cache" \
-    version="v1.23.1"
+    version="v1.23.2"
 
 RUN groupadd -r -g 65532 nonroot && useradd --no-log-init -rm -u 65532 -g nonroot nonroot
 USER 65532
