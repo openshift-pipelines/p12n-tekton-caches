@@ -167,7 +167,48 @@ These parameters are supported in both `cache-fetch` and `cache-upload` step-act
 | `GOOGLE_APPLICATION_CREDENTIALS` | `string` | YES      | The path where to find the google credentials. If left empty, it is ignored.                                                                                                                                                  | `""`          |
 | `AWS_CONFIG_FILE`                | `string` | YES      | The path to the aws config file. If left empty, it is ignored.                                                                                                                                                                | `""`          |
 | `AWS_SHARED_CREDENTIALS_FILE`    | `string` | YES      | The path to find the aws credentials file. If left empty, it is ignored.                                                                                                                                                      | `""`          |
-| `BLOB_QUERY_PARAMS`              | `string` | YES      | Blob Query Params to support configure s3, gcs and azure. This is optional unless some additional features of storage providers are required like s3 acceleration, fips, pathstyle,etc                                        | `""`          |
+| `BLOB_QUERY_PARAMS`              | `string` | YES      | Extra query parameters (URL encoded, e.g. `region=us-east-1&accelerate=true`) passed to the s3/gcs blob driver. This is optional unless some additional features of storage providers are required like s3 acceleration, fips, pathstyle, etc. Only the parameters listed in [Allowed blob query parameters](#allowed-blob-query-parameters) are accepted.                                        | `""`          |
+
+#### Allowed blob query parameters
+
+Query parameters are validated against an allow list before the bucket is opened, whether they come from
+`BLOB_QUERY_PARAMS` or are already present in the `SOURCE`/`TARGET` URL. `BLOB_QUERY_PARAMS` may optionally start with
+`?` or `&` for compatibility. Each logical parameter may be specified only once across both sources. Any other or
+repeated parameter makes the step fail with a `security policy violation` error.
+
+| Parameter          | Provider | Description                                           |
+|--------------------|----------|-------------------------------------------------------|
+| `region`           | S3       | AWS region of the bucket                              |
+| `s3ForcePathStyle` | S3       | Legacy alias for path-style addressing                |
+| `use_path_style`   | S3       | Use path-style addressing                             |
+| `accelerate`       | S3       | Use the S3 transfer acceleration endpoint             |
+| `fips`             | S3       | Use the FIPS endpoint                                 |
+| `ssetype`          | S3       | Server side encryption type                           |
+| `anonymous`        | S3, GCS  | Access the bucket without credentials                 |
+| `access_id`        | GCS      | Service account email used for signing                |
+
+Parameter names are matched case insensitively and normalized to the spelling the driver expects, so
+`s3forcepathstyle` and `S3ForcePathStyle` are both accepted.
+
+The GCS `private_key_path` and `universe_domain` parameters are deliberately **not** allowed: the first one reads an
+arbitrary file from the local filesystem and the second one redirects the client to another GCP universe. The S3
+`kmskeyid` parameter is also excluded; configure the default KMS key on the bucket so callers cannot select a different
+encryption key through cache parameters.
+
+In particular, `endpoint` is blocked by default: it lets untrusted configuration redirect the cache to an arbitrary
+host, so it is deliberately not on the allow list. Deployments that legitimately need a custom endpoint, such as MinIO
+or another S3 compatible store, can still set one through the AWS configuration file pointed at by the
+`AWS_CONFIG_FILE` param, which the SDK reads directly:
+
+```ini
+[default]
+region = us-east-1
+endpoint_url = http://127.0.0.1:<port>
+```
+
+This allow list is defense in depth for Pipelines that keep the `SOURCE`/`TARGET` authority, `AWS_CONFIG_FILE`, mounted
+configuration, and credentials trusted. If callers can change those inputs or their files, the allow list does not
+prevent endpoint redirection.
 
 ### cache-fetch
 
