@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/moby/patternmatcher"
+	"github.com/openshift-pipelines/tekton-caches/internal/cacheutils"
 	"github.com/openshift-pipelines/tekton-caches/internal/flags"
-	"github.com/openshift-pipelines/tekton-caches/internal/hash"
 	"github.com/openshift-pipelines/tekton-caches/internal/upload"
 	"github.com/spf13/cobra"
 )
@@ -28,6 +28,11 @@ func uploadCmd() *cobra.Command {
 				return err
 			}
 			workingdir, err := cmd.Flags().GetString(workingdirFlag)
+			if err != nil {
+				return err
+			}
+
+			namespace, err := cmd.Flags().GetString(flags.NamespaceFlag)
 			if err != nil {
 				return err
 			}
@@ -54,8 +59,7 @@ func uploadCmd() *cobra.Command {
 			}
 			fmt.Fprintf(os.Stderr, "Matched the following files: %v\n", matches)
 
-			// TODO: Hash files based of matches
-			hashStr, err := hash.Compute(matches)
+			hashStr, err := cacheutils.Compute(namespace, workingdir, matches)
 			if err != nil {
 				return err
 			}
@@ -67,6 +71,7 @@ func uploadCmd() *cobra.Command {
 	cmd.Flags().String(targetFlag, "", "Cache target reference")
 	cmd.Flags().String(folderFlag, "", "Folder where to extract the content of the cache if it exists")
 	cmd.Flags().String(workingdirFlag, ".", "Working dir from where the files patterns needs to be taken")
+	cmd.Flags().String(flags.NamespaceFlag, "", flags.NamespaceUsage)
 	cmd.Flags().Bool(insecureFlag, false, "Wether to use insecure transport or not to upload to insecure registry")
 
 	return cmd
