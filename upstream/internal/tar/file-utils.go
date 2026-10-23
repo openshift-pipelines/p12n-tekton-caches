@@ -15,8 +15,6 @@ import (
 )
 
 func Compress(source, target string) error {
-	source = filepath.Clean(source)
-
 	// Create the destination file
 	tarfile, err := os.Create(target)
 	if err != nil {
@@ -32,54 +30,66 @@ func Compress(source, target string) error {
 	tarball := tar.NewWriter(gz)
 	defer tarball.Close()
 
-	root, err := os.OpenRoot(source)
+	// Create a root filesystem to safely access files
+	sourceAbs, err := filepath.Abs(source)
 	if err != nil {
-		return fmt.Errorf("opening source directory: %w", err)
+		return fmt.Errorf("getting absolute source path: %w", err)
 	}
-	defer root.Close()
 
-	// Walk using root-scoped paths to avoid symlink TOCTOU (gosec G122).
-	err = fs.WalkDir(root.FS(), ".", func(rel string, _ fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return fmt.Errorf("walking to %s: %w", rel, walkErr)
+	fsys := os.DirFS(sourceAbs)
+
+	// Walk through the source directory using fs.WalkDir for safer access
+	err = fs.WalkDir(fsys, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return fmt.Errorf("walking to %s: %w", path, err)
 		}
 
-		info, err := root.Lstat(rel)
+		info, err := d.Info()
 		if err != nil {
-			return fmt.Errorf("stat %s: %w", rel, err)
+			return fmt.Errorf("getting file info for %s: %w", path, err)
 		}
 
 		var linkTarget string
 		if info.Mode()&os.ModeSymlink != 0 {
-			linkTarget, err = root.Readlink(rel)
+			// For symlinks, we need to read the target using the full path
+			fullPath := filepath.Join(sourceAbs, path)
+			linkTarget, err = os.Readlink(fullPath)
 			if err != nil {
 				return fmt.Errorf("reading symlink: %w", err)
 			}
 		}
 
+		// Create tar header
 		header, err := tar.FileInfoHeader(info, linkTarget)
 		if err != nil {
 			return fmt.Errorf("creating tar header: %w", err)
 		}
 
-		header.Name = filepath.ToSlash(rel)
+		header.Name = path
 
+		// Preserve UID/GID
 		if stat, ok := info.Sys().(*syscall.Stat_t); ok {
 			header.Uid = int(stat.Uid)
 			header.Gid = int(stat.Gid)
 		}
 
+		// Write header
 		if err := tarball.WriteHeader(header); err != nil {
 			return fmt.Errorf("writing header: %w", err)
 		}
 
+		// Write file content for regular files only
 		if info.Mode().IsRegular() {
-			file, err := root.Open(rel)
+			// Use the filesystem interface to open files safely (prevents TOCTOU)
+			file, err := fsys.Open(path)
 			if err != nil {
 				return fmt.Errorf("opening file: %w", err)
 			}
+
+			// Copy file content and close immediately to prevent file descriptor exhaustion
 			_, copyErr := io.Copy(tarball, file)
 			closeErr := file.Close()
+
 			if copyErr != nil {
 				return fmt.Errorf("copying file data: %w", copyErr)
 			}

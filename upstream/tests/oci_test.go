@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/openshift-pipelines/tekton-caches/internal/cacheutils"
 	"github.com/openshift-pipelines/tekton-caches/internal/fetch"
-	"github.com/openshift-pipelines/tekton-caches/internal/hash"
 	"github.com/openshift-pipelines/tekton-caches/internal/upload"
 	"github.com/openshift-pipelines/tekton-caches/tests/client"
 	"github.com/openshift-pipelines/tekton-caches/tests/resources"
@@ -24,7 +24,7 @@ import (
 const (
 	defaultReg         = "oci://127.0.0.1:5000/cache/go"
 	goModContent       = `module foo/bar/hello.moto`
-	hashOfGoModContent = "749da1a3a827cde86850743dd2bbf6b65d13497d4b0ecf88d1df7a77ce687f86"
+	hashOfGoModContent = "6956bd61dbbd01446eafe62e9b5cfb1b5905d031ff86b7641039ac2013ab31d2"
 )
 
 func TestOCIUpload(t *testing.T) {
@@ -34,16 +34,17 @@ func TestOCIUpload(t *testing.T) {
 		regTarget = os.Getenv("TARGET_REGISTRY")
 	}
 	tmpdir := fs.NewDir(t, t.Name())
-	assert.ErrorContains(t, fetch.Fetch(ctx, "ahash", regTarget+"notfound", tmpdir.Path(), false), "MANIFEST_UNKNOWN: manifest unknown")
+	assert.ErrorContains(t, fetch.Fetch(ctx, "ahash", regTarget+"notfound", tmpdir.Path(), "", false), "MANIFEST_UNKNOWN: manifest unknown")
 	defer tmpdir.Remove()
 	defer env.ChangeWorkingDir(t, tmpdir.Path())()
 	assert.NilError(t, os.WriteFile(filepath.Join(tmpdir.Path(), "go.mod"), []byte(goModContent), 0o644))
-	hash, err := hash.Compute([]string{filepath.Join(tmpdir.Path(), "go.mod")})
+	hash, err := cacheutils.Compute("", tmpdir.Path(), []string{filepath.Join(tmpdir.Path(), "go.mod")})
 	assert.Equal(t, hash, hashOfGoModContent)
 	assert.NilError(t, err)
 	assert.NilError(t, upload.Upload(ctx, hash, regTarget, tmpdir.Path(), true))
-	assert.NilError(t, fetch.Fetch(ctx, hash, regTarget, tmpdir.Path(), false))
-	assert.NilError(t, fetch.Fetch(ctx, "unknown", regTarget, tmpdir.Path(), false)) // should not error on unknown hash
+	digest := readFile("digest.txt")
+	assert.NilError(t, fetch.Fetch(ctx, hash, regTarget, tmpdir.Path(), digest, false))
+	assert.NilError(t, fetch.Fetch(ctx, "unknown", regTarget, tmpdir.Path(), digest, false)) // should not error on unknown hash
 }
 
 func TestCacheOCI(t *testing.T) {
@@ -107,4 +108,14 @@ func TestCacheOCI(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error deleting pipelinerun")
 	}
+}
+
+func readFile(file string) string {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return ""
+	}
+
+	// Convert bytes to string and print
+	return string(data)
 }
