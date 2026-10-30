@@ -1,7 +1,9 @@
-contentOrigin: 
+contentOrigin:
   repofiles:
     - ./ubi.repo
-packages: [openssh-clients]
+packages:
+  - shadow-utils
+  - openssh-clients
 arches:
   # The list of architectures
   - aarch64

@@ -28,5 +28,7 @@ LABEL \
     summary="Red Hat OpenShift Pipelines tekton-caches cache" \
     version="nightly"
 
-RUN groupadd -r -g 65532 nonroot && useradd --no-log-init -rm -u 65532 -g nonroot nonroot
+# ubi10/ubi-minimal does not ship shadow-utils, which provides groupadd/useradd
+RUN microdnf install -y shadow-utils && \
+    groupadd -r -g 65532 nonroot && useradd --no-log-init -rm -u 65532 -g nonroot nonroot
 USER 65532
