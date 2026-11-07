@@ -150,6 +150,35 @@ spec:
 `bound-sa-token` workspace isn't required if Workload Identity federation isn't setup. Here we assumed an OIDC is
 configured in OpenShift.
 
+## Cache key
+
+The `{{hash}}` used in `SOURCE` and `TARGET` is a SHA-256 computed over, in order:
+
+- a fixed domain separator;
+- the namespace the step runs in;
+- the number of matched files;
+- the files matched by `PATTERNS`, sorted by their path relative to `WORKING_DIR`, each contributing its relative
+  path, its size and the SHA-256 of its content.
+
+The domain separator, namespace and each relative path are length-prefixed before being hashed. The file count and
+file sizes use fixed-width integers, and each content digest has a fixed width. These encodings make field boundaries
+unambiguous. Relative paths, sizes and file contents all contribute to the key; only the checkout location and match
+order are ignored.
+
+The StepActions read the `TaskRun` namespace from the downward API (`metadata.namespace`), so the same matched files
+produce different keys in differently named namespaces. A `SOURCE` or `TARGET` is scoped by that key only when it
+contains `{{hash}}`. This is defense in depth against unintended cache sharing, not an access-control boundary:
+direct CLI callers can choose `--namespace`, literal references bypass hash substitution, and namespace names can
+repeat across clusters. Backend credentials and policies must enforce tenant isolation.
+
+To deliberately share generated entries across namespaces, retain `{{hash}}` and invoke the `cache` binary with the
+same explicit, non-empty `--namespace` value.
+
+> [!NOTE]
+> The key format changed to fix collisions between different file layouts. Hash-templated references will miss entries
+> created with the previous format. A successful upload creates a new entry; old objects remain until the backend's
+> retention policy removes them.
+
 ## Param Names
 
 Here is the list of params being used in cache step actions.
